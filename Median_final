@@ -1,0 +1,118 @@
+import csv
+%matplotlib inline
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import scipy.stats as stats
+import sklearn
+import statsmodels.api as sm
+from matplotlib import rcParams
+from sklearn import preprocessing, cross_validation, svm
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import log_loss, accuracy_score
+
+train = pd.read_csv('train.csv', parse_dates = ['Date'])
+test = pd.read_csv("test.csv")
+
+train.describe()
+train.dtypes
+
+year = train.Date.dt.year
+month = train.Date.dt.month
+day = train.Date.dt.day
+weekdays = train.Date.dt.dayofweek
+
+train['year'] = train.Date.dt.year
+train['month'] = train.Date.dt.month
+train['day'] = train.Date.dt.day
+train['weekdays'] = train.Date.dt.dayofweek
+  
+ train_data = train
+ data = train.drop(labels= ["Withdrawal","Balance","ID","Date"], axis=1)
+ labels = train['Withdrawal']
+     
+    def remove_cruft(s):
+    return s[4:9]
+#data.ATM_ID = [remove_cruft(s) for s in data.ATM_ID]
+     
+
+# Exploring features
+
+train.head()
+train.ATM_ID.nunique()
+Wd_mean = train.groupby('ATM_ID').Withdrawal.mean()
+np.where(Wd_mean == 0)
+#Wd_mean[np.where(Wd_mean == 0)].index.tolist()
+#ATM having zero withdrawing
+ATM_ID_0 = Wd_mean[Wd_mean == 0].index.tolist()
+
+train[train.ATM_ID == 'SRNO01865'].Withdrawal
+train.Withdrawal.hist(bins ='auto')
+
+Wd_mean = train.groupby('ATM_ID').Withdrawal.mean()
+Wd_mean.hist()
+Wd_mean.hist(bins ='auto')
+Wd_mean.describe()
+
+#ATM having mean withdrawing >20,000
+
+ATM_ID_20 = Wd_mean[Wd_mean >= 20000].index.tolist()
+temp = np.logical_and(number >= 15000, number <= 20000)
+ATM_ID_15_20 = Wd_mean[temp].index.tolist()
+temp = np.logical_and(number >= 12000, number <= 15000)
+ATM_ID_12_15 = Wd_mean[temp].index.tolist()
+
+temp = np.logical_and(number >= 8000, number <= 12000)
+ATM_ID_8_12 = Wd_mean[temp].index.tolist()
+
+temp = np.logical_and(number >= 05000, number <= 8000)
+ATM_ID_05_08 = Wd_mean[temp].index.tolist()
+temp = np.logical_and(number > 00, number <= 05000)
+ATM_ID_0_5 = Wd_mean[temp].index.tolist()
+ATM_ID_0 = Wd_mean[Wd_mean == 0].index.tolist()
+
+
+            # assigning to data columns
+temp = np.in1d(data.ATM_ID, ATM_ID_0)
+data['ATM_ID_0'] = temp.astype(int)
+
+temp = np.in1d(data.ATM_ID,ATM_ID_0_5)
+data['ATM_ID_0_5'] = temp.astype(int)
+
+temp = np.in1d(data.ATM_ID,ATM_ID_05_08)
+data['ATM_ID_05_08'] = temp.astype(int)
+
+temp = np.in1d(data.ATM_ID,ATM_ID_8_12)
+data['ATM_ID_8_12'] = temp.astype(int)
+
+temp = np.in1d(data.ATM_ID, ATM_ID_15_20)
+data['ATM_ID_15_20'] = temp.astype(int)
+
+temp = np.in1d(data.ATM_ID, ATM_ID_20)
+data['ATM_ID_20'] = temp.astype(int)
+
+
+data = data.drop(labels= ["ATM_ID"], axis=1)
+
+[train_data, test_data, train_labels, test_labels] = cross_validation.train_test_split(data, labels, test_size=0.3)
+
+
+#Linear regression
+lm = sklearn.linear_model.LinearRegression()
+lm.fit(train_data,train_labels)
+prediction = np.array(lm.predict(test_data))
+Rmse = np.sqrt(sum((prediction - test_labels) * (prediction - test_labels)))
+
+# Random forest (memory out so can't be performed)
+rf = RandomForestClassifier()
+rf.fit(train_data,train_labels)
+prediction = np.array(rf.predict(test_data))
+
+#SVM
+svm = svm.SVC(kernel='linear')
+svm.fit(train_data,train_labels)
+predicted = np.array(svm.predict(test_data))
+Rmse = np.sqrt(sum((prediction - test_labels) * (prediction - test_labels)))
