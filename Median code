@@ -1,0 +1,84 @@
+import numpy as np
+import pandas as pd
+
+train = pd.read_csv('train.csv', parse_dates = ['Date'])
+test = pd.read_csv("Withdrawal.csv", parse_dates = ['DATE'])
+
+year = train.Date.dt.year
+month = train.Date.dt.month
+day = train.Date.dt.day
+weekdays = train.Date.dt.dayofweek
+
+train['year'] = train.Date.dt.year
+train['month'] = train.Date.dt.month
+train['day'] = train.Date.dt.day
+train['weekdays'] = train.Date.dt.dayofweek
+     
+Wd_median = train.groupby('ATM_ID').Withdrawal.median() 
+Wd_std = train.groupby('ATM_ID').Withdrawal.std() 
+
+train['Wd_std'] = 0
+train['Wd_median'] = 0
+     
+for i in np.arange(len(Wd_median)): 
+train.Wd_median[np.in1d(train.ATM_ID,Wd_median.index[i])] = Wd_median[i]
+ 
+for i in np.arange(len(Wd_std)): 
+train.Wd_std[np.in1d(train.ATM_ID,Wd_std.index[i])] = Wd_std[i]
+
+train_data = train[ train.Wd_median != 0]
+data = train[ train.Wd_median != 0]
+labels = data['Withdrawal']
+ labels = labels.values
+ data = data.drop(labels= ["Withdrawal","Balance","ID","Date","ATM_ID"], axis=1)
+
+  # feature engineering for test data (same as train)
+ 
+ year = test.DATE.dt.year
+month = test.DATE.dt.month
+day = test.DATE.dt.day
+weekdays = test.DATE.dt.dayofweek
+
+test['year'] = test.DATE.dt.year
+test['month'] = test.DATE.dt.month
+test['day'] = test.DATE.dt.day
+test['weekdays'] = test.DATE.dt.dayofweek
+    
+    test['Wd_std'] = 0
+test['Wd_median'] = 0
+    
+    for i in np.arange(len(Wd_median)): 
+test.Wd_median[np.in1d(test.ATM_ID,Wd_median.index[i])] = Wd_median[i]
+ 
+for i in np.arange(len(Wd_std)): 
+test.Wd_std[np.in1d(test.ATM_ID,Wd_std.index[i])] = Wd_std[i]
+
+test_data = test[test.Wd_median != 0]
+test_data2 = test_data.drop(labels= ["WITHDRAWAL","ID","DATE","ATM_ID"], axis=1)
+test.WITHDRAWAL[test.Wd_median == 0] = 0
+               
+ # for xgb train data
+ data.to_csv('data.csv', index = True)
+ # for label
+ train_data.to_csv('train_data.csv', index = True)
+ # put pred value in this test data
+test_data.to_csv('test_data.csv', index = True)
+# for xgb test data
+test_data2.to_csv('test_data2.csv', index = True)
+
+
+temp = pd.read_csv("SubmissionXG1.csv", parse_dates = ['DATE'])
+
+
+tes = test
+     for i in temp.X1:
+          tes.WITHDRAWAL[i] = temp.WITHDRAWAL[count]
+          count = count +1     
+ 
+         tes.WITHDRAWAL = 0
+  A = pd.merge(tes, temp, on='ID',how='left')
+  A.WITHDRAWAL_y[A.Wd_median ==0] = 0
+  A[A.WITHDRAWAL_y ==0]
+  Submiss = A.drop(labels= ["WITHDRAWAL_x ","year","month","day","weekdays","Wd_std", "Wd_median", "X1","ATM_ID_y", "DATE_y"], axis=1)
+ A.to_csv('A.csv', index = True)
+ Submiss.to_csv('Submiss.csv', index = True)
